@@ -1,130 +1,129 @@
-# spotify-analysis
+# Spotify Playlist Analysis with AWS Lambda and S3
+This project provides a solution for ingesting Spotify playlist data using AWS Lambda and storing the data in S3. The solution includes two lambda functions: one for ingesting data from Spotify, and one for converting the data to CSV format and storing it in S3.
 
-This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
+![image](https://user-images.githubusercontent.com/23535221/227681636-ddd5712a-f60d-4cec-9986-1da40585835c.png)
 
-- hello_world - Code for the application's Lambda function.
-- events - Invocation events that you can use to invoke the function.
-- tests - Unit tests for the application code. 
-- template.yaml - A template that defines the application's AWS resources.
 
-The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
-If you prefer to use an integrated development environment (IDE) to build and test your application, you can use the AWS Toolkit.  
-The AWS Toolkit is an open source plug-in for popular IDEs that uses the SAM CLI to build and deploy serverless applications on AWS. The AWS Toolkit also adds a simplified step-through debugging experience for Lambda function code. See the following links to get started.
-111122222
-* [CLion](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [GoLand](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [IntelliJ](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [WebStorm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [Rider](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [PhpStorm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [PyCharm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [RubyMine](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [DataGrip](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html)
-* [Visual Studio](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/welcome.html)
+## Dependencies and Installations
+This project requires the following dependencies:
 
-## Deploy the sample application
+- `boto3`
+- `spotipy`
 
-The Serverless Application Mo1111del Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.
+To install these dependencies, you can use pip:
 
-To use the SAM CLI, you need the following tools.
+```
+pip install boto3 spotipy
+```
+## Workflow
+1. **EventBridge Trigger** is scheduled every week to invoke **spotify_data_ingestion.py**
+2. **Data Ingestion Lambda** is invokes and queries Spotify API for the playlist URIs. A JSON object is returned.
+3. **Data Ingestion Lambda** sends the JSON object to S3. 
+4. **Data Transformation Lambda** converts JSON object into CSV and puts the new object back into S3.
 
-* SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* [Python 3 installed](https://www.python.org/downloads/)
-* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
+## Lambda Functions
+### Spotify Data Ingestion
+The first lambda function, **spotify_data_ingestion.py** , connects to the Spotify API using `spotipy` and retrieves playlist data for a specific playlist. The function then uploads the JSON data to an S3 bucket.
 
-To build and deploy your application for the first time, run the following in your shell:
+### JSON to CSV Conversion
+The second lambda function, json_to_csv.py, retrieves the JSON data from S3 and converts it to CSV format. The function then uploads the CSV data to an S3 bucket.
 
-```bash
-sam build --use-container
-sam deploy --guided
+## S3 Key Structure
+The S3 key structure for the JSON and CSV files follows a specific pattern to allow for easy organization and retrieval of the data. The key is composed of multiple subdirectories separated by forward slashes. Here's an example:
+
+```
+data/playlist_database/playlist_json/rap_caviar/dataload=2023-03-24/rap_caviar.json
 ```
 
-The first command will build the source of your application. The second command will package and deploy your application to AWS, with a series of prompts:
+In this example, the S3 key consists of the following subdirectories:
 
-* **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region, and a good starting point would be something matching your project name.
-* **AWS Region**: The AWS region you want to deploy your app to.
-* **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy application changes.
-* **Allow SAM CLI IAM role creation**: Many AWS SAM templates, including this example, create AWS IAM roles required for the AWS Lambda function(s) included to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack which creates or modifies IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
-* **Save arguments to samconfig.toml**: If set to yes, your choices will be saved to a configuration file inside the project, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
+- `data`: The top-level directory for the project
+- `playlist_database`: A subdirectory for playlist data
+- `playlist_json`: A subdirectory for JSON data
+- `rap_caviar`: The name of the playlist
+- `dataload=2023-03-24`: The date when the data was ingested
+- `rap_caviar.json`: The name of the JSON file
 
-You can find your API Gateway Endpoint URL in the output values displayed after deployment.
+This structure allows you to easily identify the playlist and the date when the data was ingested. The CSV file structure follows a similar pattern, with the playlist_csv subdirectory replacing playlist_json.
 
-## Use the SAM CLI to build and test locally
+Overall, this structure allows for easy organization and retrieval of playlist data in S3, which is important when dealing with large amounts of data.
 
-Build your application with the `sam build --use-container` command.
-
-```bash
-spotify-analysis$ sam build --use-container
+## Setting Up and Testing the Lambda Functions
+To set up the lambda functions, follow these steps:
+1. Clone the repository to your local machine using the following command:
+```
+git clone https://github.com/your-username/spotify-lambda-s3.git
 ```
 
-The SAM CLI installs dependencies defined in `hello_world/requirements.txt`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
-
-Test a single function by invoking it directly with a test event. An event is a JSON document that represents the input that the function receives from the event source. Test events are included in the `events` folder in this project.
-
-Run functions locally and invoke them with the `sam local invoke` command.
-
-```bash
-spotify-analysis$ sam local invoke HelloWorldFunction --event events/event.json
+2. Install the dependencies using pip:
+```
+pip install boto3 spotipy
 ```
 
-The SAM CLI can also emulate your application's API. Use the `sam local start-api` to run the API locally on port 3000.
+3. Open spotify_data_ingestion.py and replace my-s3-bucket with the name of your S3 bucket.
 
-```bash11233
-spotify-analysis$ sam local start-api
-spotify-analysis$ curl http://localhost:3000/
+4. Open json_to_csv.py and replace my-s3-bucket with the name of your S3 bucket.
+
+5. Zip both files into separate packages and upload them to AWS Lambda.
+
+6. In AWS Lambda, create a new trigger for the spotify_data_ingestion function to run on a schedule, such as daily.
+
+7. Test the spotify_data_ingestion function by manually invoking it and checking if the JSON data is uploaded to your S3 bucket.
+
+8. Test the json_to_csv function by manually invoking it and checking if the CSV data is uploaded to your S3 bucket.
+
+9. Schedule the json_to_csv function to run on a regular interval, such as hourly, to ensure that new data is converted to CSV format and uploaded to your S3 bucket.
+
+That's it! You should now have a fully functional solution for ingesting and analyzing Spotify playlist data using AWS Lambda and S3.
+
+## Event Test Payloads
+
+### Example Test Event Payload for spotify_data_ingestion
+```
+{
+  "key": "data/playlist_database/playlist_json/rap_caviar/dataload=2023-03-24/rap_caviar.json"
+}
+```
+### Example Test Event Payload for json_to_csv
+```
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "my-s3-bucket"
+        },
+        "object": {
+          "key": "data/playlist_database/playlist_json/rap_caviar/dataload=2023-03-24/rap_caviar.json"
+        }
+      }
+    }
+  ]
+}
 ```
 
-The SAM CLI reads the application template to determine the API's routes and the functions that they invoke. The `Events` property on each function's definition includes the route and method for each path.
+These test event payloads can be used to manually test the lambda functions in the AWS Lambda console. Simply copy and paste the payload into the console and click "Test" to test the function.
 
-```yaml
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-```
 
-## Add a resource to your application
-The application template uses AWS Serverless Application Model (AWS SAM) to define application resources. AWS SAM is an extension of AWS CloudFormation with a simpler syntax for configuring common serverless application resources such as functions, triggers, and APIs. For resources not included in [the SAM specification](https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md), you can use standard [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html) resource types.
-111
-## Fetch, tail, and filter Lambda function logs
+## Troubleshooting Tips and Common Errors
+### S3 Bucket Permissions
+Make sure that the IAM role associated with your lambda function has the necessary permissions to access your S3 bucket. If you encounter errors related to S3 permissions, check your IAM role settings and make sure that the role has the necessary permissions.
 
-To simplify troubleshooting, SAM CLI has a command called `sam logs`. `sam logs` lets you fetch logs generated by your deployed Lambda function from the command line. In addition to printing the logs on the terminal, this command has several nifty features to help you quickly find the bug.
+## Lambda Function Configuration
+Double-check that your lambda function configuration is correct, including the function code, function handler, and function trigger. If any of these settings are incorrect, the function may fail to execute or may not execute as intended.
 
-`NOTE`: This command works for all AWS Lambda functions; not just the ones you deploy using SAM.
+## Spotipy API Credentials
+Make sure that you have entered your Spotipy API credentials correctly in the spotify_data_ingestion.py file. If your API credentials are incorrect or invalid, the function will fail to connect to the Spotipy API and will not be able to retrieve playlist data.
 
-```bash
-spotify-analysis$ sam logs -n HelloWorldFunction --stack-name spotify-analysis --tail
-```
+## Invalid JSON Data
+If you encounter errors related to invalid JSON data, make sure that the JSON data being uploaded to your S3 bucket is valid and properly formatted. Invalid JSON data may cause the json_to_csv function to fail or produce incorrect results.
 
-You can find more information and examples about filtering Lambda function logs in the [SAM CLI Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
+## Incorrect S3 Key Structure
+Make sure that the S3 key structure for your JSON and CSV data follows the correct pattern, as described in the README file. If the key structure is incorrect, the lambda functions may not be able to access or write to the correct S3 objects.
 
-## Tests
+## AWS Lambda and S3 Region Mismatch
+Make sure that your AWS Lambda and S3 bucket are located in the same region. If the lambda function and S3 bucket are located in different regions, the function may fail to access or write to the S3 bucket.
 
-Tests are defined in the `tests` folder in this project. Use PIP to install the test dependencies and run tests.
+These are just a few common errors that you may encounter when setting up and using the lambda functions. If you encounter other errors or issues, refer to the AWS Lambda and S3 documentation, or consult the AWS support team for assistance.
 
-```bash
-spotify-analysis$ pip install -r tests/requirements.txt --user
-# unit test
-spotify-analysis$ python -m pytest tests/unit -v
-# integration test, requiring deploying the stack first.
-# Create the env variable AWS_SAM_STACK_NAME with the name of the stack we are testing
-spotify-analysis$ AWS_SAM_STACK_NAME=<stack-name> python -m pytest tests/integration -v
-```
-
-## Cleanup
-
-To delete the sample application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
-
-```bash
-aws cloudformation delete-stack --stack-name spotify-analysis
-```
-
-## Resources
-
-See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) for an introduction to SAM specification, the SAM CLI, and serverless application concepts.
-
-Next, you can use AWS Serverless Application Repository to deploy ready to use Apps that go beyond hello world samples and learn how authors developed their applications: [AWS Serverless Application Repository main page](https://aws.amazon.com/serverless/serverlessrepo/)
