@@ -107,7 +107,7 @@ jobs:
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
 
   build-and-package:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     needs: [test]
     runs-on: self-hosted
     steps:
@@ -166,7 +166,7 @@ jobs:
           path: packaged-prod.yaml
 
   deploy-testing:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     needs: [build-and-package]
     runs-on: self-hosted
     steps:
@@ -200,7 +200,7 @@ jobs:
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
 
   integration-test:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     needs: [deploy-testing]
     runs-on: self-hosted
     steps:
@@ -209,7 +209,7 @@ jobs:
           # trigger the integration tests here
 
   deploy-prod:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     needs: [integration-test]
     runs-on: self-hosted
     # Configure GitHub Action Environment to have a manual approval step before deployment to production
