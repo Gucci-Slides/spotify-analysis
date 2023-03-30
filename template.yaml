@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Runtime: python3.9
+    MemorySize: 128
+    Timeout: 60
+
+Parameters:
+  MyEnvironment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+
+Mappings:
+  ResourceNames:
+    dev:
+      bucketName: spotify-analysis-dev
+    prod:
+      bucketName: spotify-analysis-prod
+
+
+Resources:
+  SpotifyAnalysisBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !FindInMap [ResourceNames, !Ref MyEnvironment, bucketName]
+
+  ExtractFunctionLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/extract
+      Handler: app.lambda_handler
+      Layers: 
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:spotipy:1
+      Environment:
+        Variables:
+          BUCKET_NAME: !FindInMap [ ResourceNames, !Ref MyEnvironment, bucketName ]
+      Policies:
+        - S3WritePolicy:
+            BucketName: !FindInMap [ ResourceNames, !Ref MyEnvironment, bucketName ]
+        - SSMParameterReadPolicy:
+            ParameterName: API_KEY
+        - SSMParameterReadPolicy:
+            ParameterName: API_URL
+
