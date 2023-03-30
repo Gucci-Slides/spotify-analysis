@@ -9,10 +9,14 @@ from spotipy.oauth2 import SpotifyClientCredentials
 # Connect to AWS Systems Manager Parameter Store
 ssm = boto3.client('ssm')
 
+# Connect to AWS S3
+s3_client = boto3.client('s3')
+
 # Retrieve Spotify API credentials from AWS SSM
-SPOTIPY_CLIENT_SECRET = ssm.get_parameter(Name='API_KEY', WithDecryption=True)[
+SPOTIPY_CLIENT_ID = ssm.get_parameter(Name='API_CLIENT_ID')[
     'Parameter']['Value']
-SPOTIPY_CLIENT_ID = ssm.get_parameter(Name='API_URL')['Parameter']['Value']
+SPOTIPY_CLIENT_SECRET = ssm.get_parameter(Name='API_SECRET_KEY', WithDecryption=True)[
+    'Parameter']['Value']
 
 
 # Connect to the Spotify API
@@ -39,8 +43,7 @@ def lambda_handler(event, context):
         key = f'data/playlist_database/playlist_json/{playlist_name}/dataload={my_string}/{playlist_name}.json'
 
         # Upload the JSON object to S3
-        s3_client = boto3.client('s3')
-        bucket_name = os.environ('BUCKET_NAME')
+        bucket_name = os.environ['BUCKET_NAME']
 
         s3_client.put_object(
             Bucket=bucket_name,

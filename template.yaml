@@ -43,7 +43,7 @@ Resources:
         - S3WritePolicy:
             BucketName: !FindInMap [ ResourceNames, !Ref MyEnvironment, bucketName ]
         - SSMParameterReadPolicy:
-            ParameterName: API_KEY
+            ParameterName: API_CLIENT_ID
         - SSMParameterReadPolicy:
-            ParameterName: API_URL
+            ParameterName: API_SECRET_KEY
 
